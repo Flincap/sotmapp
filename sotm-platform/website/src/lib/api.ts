@@ -121,30 +121,30 @@ export const FALLBACK_SPEAKERS = [
 ]
 
 /* ---------- Download URL handling ----------
-   Messages are hosted on OneDrive (and legacy files on Cloudinary). Each
-   host needs a different nudge to force a direct browser download instead
-   of opening a preview page. */
+   Messages are hosted on OneDrive (and legacy files on Cloudinary).
 
-function base64UrlEncode(value: string): string {
-  // UTF-8 safe: btoa alone throws on characters outside Latin-1.
-  const bytes = new TextEncoder().encode(value)
-  let binary = ''
-  bytes.forEach((b) => {
-    binary += String.fromCharCode(b)
-  })
-  return btoa(binary).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-')
+   IMPORTANT (2024+): Microsoft disabled anonymous direct-download conversion
+   for personal OneDrive share links (1drv.ms / onedrive.live.com). There is
+   no reliable client-side workaround, so for those links we open the share
+   page in a new tab — OneDrive shows its own Download button there.
+   OneDrive for Business / SharePoint links still support true one-click
+   downloads via the download=1 flag, as do Cloudinary and any plain file
+   URLs. */
+
+/** Personal OneDrive links can no longer be converted to direct downloads. */
+export function isPersonalOneDrive(rawUrl: string): boolean {
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase()
+    return host === '1drv.ms' || host.endsWith('onedrive.live.com')
+  } catch {
+    return false
+  }
 }
 
 /**
- * Turns a share/preview link into a direct-download link.
- *
- * Supported hosts:
- * - OneDrive short links (1drv.ms)  -> Microsoft's documented shares API,
- *   which streams the file content directly.
- * - OneDrive full links (onedrive.live.com) -> download=1 query flag.
- * - SharePoint / OneDrive for Business (*.sharepoint.com) -> download=1.
- * - Cloudinary -> fl_attachment transformation.
- * - Anything else is returned untouched.
+ * Turns a share/preview link into a direct-download link where the host
+ * still supports it. Personal OneDrive links are returned unchanged (the
+ * caller should open them in a new tab instead).
  */
 export function toDirectDownloadUrl(rawUrl: string): string {
   if (!rawUrl) return rawUrl
@@ -157,23 +157,7 @@ export function toDirectDownloadUrl(rawUrl: string): string {
 
   const host = url.hostname.toLowerCase()
 
-  // OneDrive short share link
-  if (host === '1drv.ms') {
-    const encoded = base64UrlEncode(rawUrl)
-    return `https://api.onedrive.com/v1.0/shares/u!${encoded}/root/content`
-  }
-
-  // OneDrive personal full link
-  if (host.endsWith('onedrive.live.com')) {
-    if (url.pathname.includes('/embed')) {
-      url.pathname = url.pathname.replace('/embed', '/download')
-      return url.toString()
-    }
-    url.searchParams.set('download', '1')
-    return url.toString()
-  }
-
-  // SharePoint / OneDrive for Business
+  // SharePoint / OneDrive for Business — still supports direct download
   if (host.endsWith('.sharepoint.com')) {
     url.searchParams.set('download', '1')
     return url.toString()
@@ -188,29 +172,15 @@ export function toDirectDownloadUrl(rawUrl: string): string {
   return rawUrl
 }
 
-/** Makes a flier/thumbnail URL renderable inside <img>. OneDrive and
-    SharePoint share links point at preview pages, not image bytes, so we
-    route them through the direct-content conversion. Other hosts pass
-    through untouched. */
-export function toDisplayImageUrl(rawUrl?: string): string | undefined {
-  if (!rawUrl) return rawUrl
-  try {
-    const host = new URL(rawUrl).hostname.toLowerCase()
-    if (
-      host === '1drv.ms' ||
-      host.endsWith('onedrive.live.com') ||
-      host.endsWith('.sharepoint.com')
-    ) {
-      return toDirectDownloadUrl(rawUrl)
-    }
-  } catch {
-    /* not a URL — return as-is */
-  }
-  return rawUrl
-}
-
-/** Triggers a browser download for a message without navigating away. */
+/** Starts the download for a message. Personal OneDrive links open the
+    OneDrive page in a new tab (its Download button works for everyone);
+    every other host downloads directly. */
 export function downloadMessage(message: Pick<ApiMessage, 'downloadUrl' | 'title'>): void {
+  if (!message.downloadUrl) return
+  if (isPersonalOneDrive(message.downloadUrl)) {
+    window.open(message.downloadUrl, '_blank', 'noopener')
+    return
+  }
   const href = toDirectDownloadUrl(message.downloadUrl)
   const a = document.createElement('a')
   a.href = href
@@ -219,6 +189,24 @@ export function downloadMessage(message: Pick<ApiMessage, 'downloadUrl' | 'title
   document.body.appendChild(a)
   a.click()
   a.remove()
+}
+
+/** Makes a flier/thumbnail URL renderable inside <img>. Personal OneDrive
+    links cannot serve raw image bytes anymore, so they are dropped (the
+    placeholder shows instead of a broken image). SharePoint links are
+    converted; other hosts pass through untouched. */
+export function toDisplayImageUrl(rawUrl?: string): string | undefined {
+  if (!rawUrl) return undefined
+  if (isPersonalOneDrive(rawUrl)) return undefined
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase()
+    if (host.endsWith('.sharepoint.com')) {
+      return toDirectDownloadUrl(rawUrl)
+    }
+  } catch {
+    /* not a URL — return as-is */
+  }
+  return rawUrl
 }
 
 /* ---------- Formatters ---------- */
