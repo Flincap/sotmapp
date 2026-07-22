@@ -1,4 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Speaker } from '../schemas/speaker.schema';
@@ -38,11 +42,31 @@ export class SpeakersService implements OnModuleInit {
     }
 
     const activeSpeakers = speakerCounts.map((count) => count._id);
-    await this.speakerModel.deleteMany({ name: { $nin: activeSpeakers } });
+    await this.speakerModel.deleteMany({
+      name: { $nin: activeSpeakers },
+      manual: { $ne: true },
+    });
   }
 
   async findAll(): Promise<Speaker[]> {
     return this.speakerModel.find().sort({ name: 1 }).exec();
+  }
+
+  async create(name: string): Promise<Speaker> {
+    const trimmed = name.trim();
+    if (!trimmed) throw new BadRequestException('Speaker name is required');
+    const existing = await this.speakerModel
+      .findOne({ name: trimmed })
+      .collation({ locale: 'en', strength: 2 })
+      .exec();
+    if (existing) {
+      throw new BadRequestException('A speaker with this name already exists');
+    }
+    return this.speakerModel.create({
+      name: trimmed,
+      messageCount: 0,
+      manual: true,
+    });
   }
 
   async incrementMessageCount(speakerName: string): Promise<void> {

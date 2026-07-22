@@ -15,6 +15,11 @@ export class Speaker extends Document {
 
   @Prop({ required: true, default: 0 })
   messageCount: number;
+
+  /** True when created by an admin directly (not derived from messages).
+      Sync must never delete manual entries even at zero messages. */
+  @Prop({ default: false })
+  manual: boolean;
 }
 
 export const SpeakerSchema = SchemaFactory.createForClass(Speaker);
