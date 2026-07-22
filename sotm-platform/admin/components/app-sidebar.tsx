@@ -74,6 +74,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Upload Message",
             url: "/admin/messages/create",
           },
+          {
+            title: "Bulk Upload",
+            url: "/admin/messages/bulk",
+          },
         ],
       },
       {

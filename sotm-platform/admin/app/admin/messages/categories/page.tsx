@@ -84,6 +84,40 @@ export default function CategoriesPage() {
     fetchCategories();
   }, [access_token, fetchCategories]);
 
+
+  const [newName, setNewName] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    setIsAdding(true);
+    try {
+      await axios.post(
+        `${API_URL}/categories`,
+        { name },
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setNewName("");
+      await fetchCategories();
+      toast.success(`Category "${name}" added`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        toast.error(error.response.data.message || "Failed to add category");
+      } else {
+        toast.error("Failed to add category");
+      }
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -105,6 +139,27 @@ export default function CategoriesPage() {
           {isRefreshing ? "Refreshing..." : "Refresh Categories"}
         </Button>
       </div>
+
+      <form
+        onSubmit={handleAdd}
+        className="mb-6 flex flex-wrap items-center gap-3 rounded-md border p-4"
+      >
+        <label htmlFor="new-category" className="text-sm font-medium">
+          Add a category
+        </label>
+        <input
+          id="new-category"
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="e.g. Faith"
+          maxLength={80}
+          className="flex-1 min-w-[220px] rounded-md border px-3 py-2 text-sm"
+        />
+        <Button type="submit" disabled={isAdding || !newName.trim()}>
+          {isAdding ? "Adding..." : "Add category"}
+        </Button>
+      </form>
 
       <div className="rounded-md">
         <table className="w-full">

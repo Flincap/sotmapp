@@ -78,6 +78,40 @@ export default function SpeakersPage() {
     fetchSpeakers();
   }, [access_token, fetchSpeakers]);
 
+
+  const [newName, setNewName] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    setIsAdding(true);
+    try {
+      await axios.post(
+        `${API_URL}/speakers`,
+        { name },
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setNewName("");
+      await fetchSpeakers();
+      toast.success(`Speaker "${name}" added`);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        toast.error(error.response.data.message || "Failed to add speaker");
+      } else {
+        toast.error("Failed to add speaker");
+      }
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -99,6 +133,27 @@ export default function SpeakersPage() {
           {isRefreshing ? "Refreshing..." : "Refresh Speakers"}
         </Button>
       </div>
+
+      <form
+        onSubmit={handleAdd}
+        className="mb-6 flex flex-wrap items-center gap-3 rounded-md border p-4"
+      >
+        <label htmlFor="new-speaker" className="text-sm font-medium">
+          Add a speaker
+        </label>
+        <input
+          id="new-speaker"
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="e.g. Apostle Segun Obadje"
+          maxLength={80}
+          className="flex-1 min-w-[220px] rounded-md border px-3 py-2 text-sm"
+        />
+        <Button type="submit" disabled={isAdding || !newName.trim()}>
+          {isAdding ? "Adding..." : "Add speaker"}
+        </Button>
+      </form>
 
       <div className="rounded-md">
         <table className="w-full">
