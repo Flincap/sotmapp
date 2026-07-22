@@ -50,7 +50,7 @@ No re-uploading of the existing library is needed — old and new links coexist.
 
 ```bash
 # API
-cd api && cp .env.example .env   # fill in MongoDB, JWT, Cloudinary
+cd api && cp .env.example .env   # fill in MONGODB_URI, JWT_SECRET, Cloudinary
 npm install && npm run start:dev # http://localhost:3001
 
 # Website
@@ -62,8 +62,50 @@ cd admin && cp .env.example .env.local
 npm install && npm run dev          # http://localhost:3000
 ```
 
-## Deploy checklist
+## Deploying everything on Vercel
 
-1. Redeploy **api/** to App Runner. Set `ALLOWED_ORIGINS` to your production domains.
-2. Deploy **website/** to Vercel (framework: Vite). If you ever move the API, update both `VITE_API_URL` and the `connect-src` entry in `vercel.json`.
-3. Deploy **admin/** to Vercel (framework: Next.js) with `NEXT_PUBLIC_API_URL` set.
+Three Vercel projects from this one repo. Create each with "Add New →
+Project", import the same GitHub repo, and set the Root Directory.
+
+**1. API** (deploy this first)
+- Root Directory: `api` (or `sotm-platform/api` if the repo has the wrapper folder)
+- Framework preset: Other
+- Environment variables: `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_CLOUD_NAME`,
+  `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `ALLOWED_ORIGINS`
+- The included `api/vercel.json` handles the build and routes every request
+  into the NestJS serverless function. Visit `<api-url>/messages` after
+  deploying to confirm it returns JSON.
+
+**2. Website**
+- Root Directory: `website` — Framework preset: Vite
+- Environment variable: `VITE_API_URL` = the API project URL from step 1
+
+**3. Admin**
+- Root Directory: `admin` — Framework preset: Next.js
+- Environment variable: `NEXT_PUBLIC_API_URL` = the API project URL
+
+### Security follow-ups (do these the same day)
+
+1. **Rotate the MongoDB password.** The old connection string (user and
+   password) was hardcoded in `app.module.ts` and lives in git history.
+   In MongoDB Atlas: Database Access → edit the user → reset password.
+   Use the new string only in Vercel env vars.
+2. Generate a fresh `JWT_SECRET` with `node api/generate-secret.js`.
+3. Set `ALLOWED_ORIGINS` on the API project to your website and admin URLs.
+
+### First admin on a fresh database
+
+If you are starting a new database (or lost the old admin credentials):
+
+```bash
+cd api
+MONGODB_URI="..." ADMIN_EMAIL="you@example.org" ADMIN_PASSWORD="..." \
+  node scripts/seed-admin.js
+```
+
+### Notes on the serverless API
+
+- The Nest app and its Mongo connection are cached per lambda instance, so
+  warm requests are fast; the first request after idling takes a few seconds.
+- Vercel limits request bodies to ~4.5 MB — message artwork images must stay
+  under that. Audio files are unaffected (they go to OneDrive, not the API).

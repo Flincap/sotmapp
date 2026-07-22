@@ -7,7 +7,7 @@
 
 export const API_URL: string =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') ||
-  'https://uc7xib3dvz.us-east-1.awsapprunner.com'
+  'https://sotm-api.vercel.app' // set VITE_API_URL in Vercel to your real API URL
 
 /* ---------- Types (mirror the backend Message schema) ---------- */
 
