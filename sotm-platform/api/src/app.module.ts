@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -15,9 +16,7 @@ import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://Babafemi:gltsermonlibpass@cluster0.ccev3sf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    ),
+    MongooseModule.forRoot(process.env.MONGODB_URI as string),
     MessagesModule,
     ConfigModule.forRoot({
       isGlobal: true,
