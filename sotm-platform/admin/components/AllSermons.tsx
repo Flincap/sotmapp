@@ -1,6 +1,6 @@
 "use client";
 
-import { API_URL, toDirectDownloadUrl } from "@/lib/api";
+import { API_URL, isPersonalOneDrive, toDirectDownloadUrl } from "@/lib/api";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import clsx from "clsx";
@@ -159,6 +159,10 @@ export default function AllSermons() {
   function handleDownload(message: Message) {
     setIsDownloadingMessage(true);
     try {
+      if (isPersonalOneDrive(message.downloadUrl)) {
+        window.open(message.downloadUrl, "_blank", "noopener");
+        return;
+      }
       const downloadUrl = toDirectDownloadUrl(message.downloadUrl);
 
       const a = document.createElement("a");

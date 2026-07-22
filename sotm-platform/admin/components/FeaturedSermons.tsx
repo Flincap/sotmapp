@@ -1,6 +1,6 @@
 "use client";
 
-import { API_URL, toDirectDownloadUrl } from "@/lib/api";
+import { API_URL, isPersonalOneDrive, toDirectDownloadUrl } from "@/lib/api";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import axios from "axios";
@@ -86,6 +86,10 @@ export default function FeaturedSermons() {
   function handleDownload(message: Message) {
     setIsDownloadingMessage(true);
     try {
+      if (isPersonalOneDrive(message.downloadUrl)) {
+        window.open(message.downloadUrl, "_blank", "noopener");
+        return;
+      }
       const downloadUrl = toDirectDownloadUrl(message.downloadUrl);
 
       const a = document.createElement("a");

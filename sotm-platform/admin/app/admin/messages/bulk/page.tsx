@@ -275,8 +275,10 @@ export default function BulkUploadPage() {
             <code>Faith; Healing</code>.
           </li>
           <li>
-            Optional: imageUrl (a link to the flier/thumbnail image), size,
-            duration (minutes), description, seriesTitle, specialMeetingName.
+            Optional: imageUrl (a direct link to the flier image — it must
+            end in .jpg or .png and open as a picture in the browser; OneDrive
+            share links will not display), size, duration (minutes),
+            description, seriesTitle, specialMeetingName.
           </li>
           <li>Save as CSV, then choose the file below and press Upload.</li>
         </ol>

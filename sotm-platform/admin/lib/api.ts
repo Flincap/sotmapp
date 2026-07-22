@@ -6,11 +6,21 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
   "https://sotm-api.vercel.app";
 
+/** Personal OneDrive links can no longer be converted to direct downloads
+ * (Microsoft disabled the anonymous shares API in late 2024). */
+export function isPersonalOneDrive(rawUrl: string): boolean {
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase();
+    return host === "1drv.ms" || host.endsWith("onedrive.live.com");
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Converts a share/preview link into a direct-download link.
- * Handles OneDrive short links (1drv.ms), OneDrive personal links,
- * SharePoint / OneDrive for Business, and Cloudinary. Anything else
- * is returned untouched.
+ * Converts a share/preview link into a direct-download link where the host
+ * still supports it (SharePoint / OneDrive for Business, Cloudinary).
+ * Personal OneDrive links are returned unchanged — open those in a new tab.
  */
 export function toDirectDownloadUrl(rawUrl: string): string {
   if (!rawUrl) return rawUrl;
@@ -22,27 +32,6 @@ export function toDirectDownloadUrl(rawUrl: string): string {
   }
   const host = url.hostname.toLowerCase();
 
-  if (host === "1drv.ms") {
-    // UTF-8 safe base64url: btoa alone throws on non-Latin-1 characters.
-    const bytes = new TextEncoder().encode(rawUrl);
-    let binary = "";
-    bytes.forEach((b) => {
-      binary += String.fromCharCode(b);
-    });
-    const encoded = btoa(binary)
-      .replace(/=+$/, "")
-      .replace(/\//g, "_")
-      .replace(/\+/g, "-");
-    return `https://api.onedrive.com/v1.0/shares/u!${encoded}/root/content`;
-  }
-  if (host.endsWith("onedrive.live.com")) {
-    if (url.pathname.includes("/embed")) {
-      url.pathname = url.pathname.replace("/embed", "/download");
-      return url.toString();
-    }
-    url.searchParams.set("download", "1");
-    return url.toString();
-  }
   if (host.endsWith(".sharepoint.com")) {
     url.searchParams.set("download", "1");
     return url.toString();
