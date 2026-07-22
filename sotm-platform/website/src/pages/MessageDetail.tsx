@@ -10,6 +10,7 @@ import {
   fetchMessages,
   formatDate,
   formatDuration,
+  toDisplayImageUrl,
   type ApiMessage,
 } from '../lib/api'
 import { SITE_URL } from '../data'
@@ -151,7 +152,7 @@ export default function MessageDetail() {
             <div>
               <Reveal>
                 {message.imageUrl ? (
-                  <img src={message.imageUrl} alt="" className="aspect-video w-full rounded-sm object-cover" />
+                  <img src={toDisplayImageUrl(message.imageUrl)} alt="" className="aspect-video w-full rounded-sm object-cover" />
                 ) : (
                   <Placeholder label="Message artwork" className="aspect-video w-full rounded-sm" />
                 )}

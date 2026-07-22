@@ -188,6 +188,27 @@ export function toDirectDownloadUrl(rawUrl: string): string {
   return rawUrl
 }
 
+/** Makes a flier/thumbnail URL renderable inside <img>. OneDrive and
+    SharePoint share links point at preview pages, not image bytes, so we
+    route them through the direct-content conversion. Other hosts pass
+    through untouched. */
+export function toDisplayImageUrl(rawUrl?: string): string | undefined {
+  if (!rawUrl) return rawUrl
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase()
+    if (
+      host === '1drv.ms' ||
+      host.endsWith('onedrive.live.com') ||
+      host.endsWith('.sharepoint.com')
+    ) {
+      return toDirectDownloadUrl(rawUrl)
+    }
+  } catch {
+    /* not a URL — return as-is */
+  }
+  return rawUrl
+}
+
 /** Triggers a browser download for a message without navigating away. */
 export function downloadMessage(message: Pick<ApiMessage, 'downloadUrl' | 'title'>): void {
   const href = toDirectDownloadUrl(message.downloadUrl)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Placeholder from './Placeholder'
-import { downloadMessage, formatDate, formatDuration, type ApiMessage } from '../lib/api'
+import { downloadMessage, formatDate, formatDuration, toDisplayImageUrl, type ApiMessage } from '../lib/api'
 
 interface MessageCardProps {
   message: ApiMessage
@@ -36,7 +36,7 @@ export default function MessageCard({ message }: MessageCardProps) {
       >
         {message.imageUrl ? (
           <img
-            src={message.imageUrl}
+            src={toDisplayImageUrl(message.imageUrl)}
             alt=""
             loading="lazy"
             className="aspect-video w-full object-cover"
