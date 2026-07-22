@@ -4,7 +4,7 @@
  */
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-  "https://uc7xib3dvz.us-east-1.awsapprunner.com";
+  "https://sotm-api.vercel.app";
 
 /**
  * Converts a share/preview link into a direct-download link.
